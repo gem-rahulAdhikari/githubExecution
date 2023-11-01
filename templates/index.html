@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Success</title>
+</head>
+<body>
+   <h1>Github Upload</h1>
+   <textarea id="text-input" rows="4" cols="50"></textarea>
+    <br>
+    <label for="email-input">Email:</label>
+        <input type="email" id="email-input" name="email" required>
+        <br>
+        <label for="branch-input">Branch:</label>
+        <input type="branch" id="branch-input" name="branch" required>
+        <br>
+    <button id="submit-button">Submit</button>
+    <br>
+    <p id="result"></p>
+    
+</body>
+<script>
+     const textInput = document.getElementById("text-input");
+     const userNameInput=document.getElementById("email-input");
+     const branchInput=document.getElementById("branch-input");
+            const submitButton = document.getElementById("submit-button");
+            const resultElement = document.getElementById("result");
+
+            submitButton.addEventListener("click", function () {
+                const textValue = textInput.value;
+                const userName = userNameInput.value; // Get the value from the input element
+                const branch = branchInput.value;
+                console.log(userName)
+
+                // Send the text data to the Flask route using AJAX
+                fetch("/process_text45", {
+                    method: "POST",
+                    body: JSON.stringify({ text: textValue,userName: userName,branch:branch }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resultElement.innerText = data.result;
+                });
+            });
+</script>
+</html>
