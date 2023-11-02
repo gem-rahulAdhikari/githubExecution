@@ -32,8 +32,8 @@ ip_address='35.230.92.82'
 #Git hub credentials
 github_username = 'gem-rahulAdhikari'
 github_repository = 'githubSelenium'
-# github_personal_access_token = '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'
-github_personal_access_token = os.environ.get('KEY')
+github_personal_access_token = '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'
+# github_personal_access_token = os.environ.get('KEY')
 source_branch_name = "main"
 
 # Set the API URLs
@@ -63,64 +63,9 @@ def process_text():
 
 
 
-@app.route('/process_text', methods=['GET', 'POST'])
-def create_branch():
-    if request.method == 'POST':
-        data = request.get_json()
-        text = data.get("text", "")
-        print("hello")
-        print(text);
-        print("hello")
-        # Get the new branch name from the form
-        new_branch_name = "beta"
-        
-        # Make an authenticated request to the GitHub API to get the SHA of the source branch
-        headers = {
-            "Authorization": f"token {github_personal_access_token}",
-        }
 
-        source_branch_name = "main"  # Replace with your source branch name
-        response = requests.get(f"https://api.github.com/repos/{github_username}/{github_repository}/git/refs/heads/{source_branch_name}", headers=headers)
-
-        if response.status_code == 200:
-            sha = response.json()['object']['sha']
-            print(sha)
-        else:
-            return f"Failed to get the SHA of the source branch."
-
-        # Create a new branch based on the SHA of the source branch
-        data = {
-            "ref": f"refs/heads/{new_branch_name}",
-            "sha": sha,
-        }
-
-        response = requests.post(f"https://api.github.com/repos/{github_username}/{github_repository}/git/refs", headers=headers, json=data)
-
-        latest_content_response = requests.get(f"https://api.github.com/repos/{github_username}/{github_repository}/contents/{old_file_path1}?ref={new_branch_name}", headers=headers)
-        if latest_content_response.status_code == 200:
-                latest_content = latest_content_response.json()['content']
-                latest_sha = latest_content_response.json()['sha']
-                updated_content = text
-                print(updated_content)
-                encoded_content = base64.b64encode(updated_content.encode()).decode()
-                # update_workflow_yaml(new_branch_name)
-                if encoded_content!=latest_content:
-                  data = {
-                'message': 'Text update from online input',
-                'content': encoded_content,
-                'sha': latest_sha,
-                "branch": new_branch_name,
-                'path': old_file_path1  # Keep the same path
-                    }
-             # Send the request to update the file on GitHub
-                update_url = f'https://api.github.com/repos/{github_username}/{github_repository}/contents/{old_file_path1}'
-                response = requests.put(update_url, json=data, headers=headers)
-                print(response)
-        
-    return f"Passed barnch created and updated"  
-
-@app.route('/process_text45', methods=['GET', 'POST'])
-def create_branch12():
+@app.route('/seleniumExecution', methods=['GET', 'POST'])
+def seleniumGithubAction():
     url = "https://us-east-1.aws.data.mongodb-api.com/app/application-0-awqqz/endpoint/getSeleniumOutput"
     formatted_time=""
     if request.method == 'POST':
@@ -131,8 +76,6 @@ def create_branch12():
         userName = data.get("userName", "")
         print(userName)
         print(type(userName))
-        # epoch_time = int(time.time())
-        # formatted_time = time.ctime(epoch_time)
         response = requests.get(url)
         if response.status_code == 200:
          data1 = response.json()
@@ -151,10 +94,6 @@ def create_branch12():
           epoch_time = int(time.time())
           epoch_time_seconds = int(time.time())
           formatted_time = str(epoch_time_seconds)
-        #   formatted_time = time.ctime(epoch_time)
-        #   formatted_time = formatted_time.replace(" ", "")
-          print(formatted_time)
-        #   encodedValue=urllib.parse.quote(formatted_time)
           post_url = "https://us-east-1.aws.data.mongodb-api.com/app/application-0-awqqz/endpoint/addSeleniumResult"
           data_to_send = {
                        "Submissions": [

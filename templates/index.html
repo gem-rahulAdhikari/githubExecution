@@ -32,7 +32,7 @@
                 console.log(userName)
 
                 // Send the text data to the Flask route using AJAX
-                fetch("/process_text45", {
+                fetch("/seleniumExecution", {
                     method: "POST",
                     body: JSON.stringify({ text: textValue,userName: userName,branch:branch }),
                     headers: {
