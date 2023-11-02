@@ -32,7 +32,7 @@ ip_address='35.230.92.82'
 #Git hub credentials
 github_username = 'gem-rahulAdhikari'
 github_repository = 'githubSelenium'
-github_personal_access_token = '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'
+github_personal_access_token = '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'
 # github_personal_access_token = os.environ.get('KEY')
 source_branch_name = "main"
 
