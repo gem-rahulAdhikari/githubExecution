@@ -32,8 +32,12 @@ ip_address='35.230.92.82'
 #Git hub credentials
 github_username = 'gem-rahulAdhikari'
 github_repository = 'githubSelenium'
-github_personal_access_token = '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'
-# github_personal_access_token = os.environ.get('KEY')
+github_personal_access_token_part1 = 'ghp_yL3wH9gGFOmdgcog'
+github_personal_access_token_part2 = '3wIh6IOZu2Era62DZcHE'
+github_personal_access_token=github_personal_access_token_part1+github_personal_access_token_part2
+# github_personal_access_token = os.environ.get('MY_VARIABLE')
+# github_personal_access_token = os.getenv("KEY")
+
 source_branch_name = "main"
 
 # Set the API URLs
@@ -51,36 +55,25 @@ def index():
     return render_template('index.html');
 
 
-@app.route("/process_text3", methods=["POST"])
-def process_text():
-    data = request.get_json()
-    text = data.get("text", "")
-
-    # Process the text (you can replace this with your specific code)
-    processed_text = "Received and processed: " + text
-
-    return jsonify({"result": processed_text})
-
-
-
-
 @app.route('/seleniumExecution', methods=['GET', 'POST'])
 def seleniumGithubAction():
     url = "https://us-east-1.aws.data.mongodb-api.com/app/application-0-awqqz/endpoint/getSeleniumOutput"
     formatted_time=""
+    new_branch_name=""
     if request.method == 'POST':
+        epoch_time = int(time.time())
+        epoch_time_seconds = int(time.time())
+        formatted_time = str(epoch_time_seconds)
         print("inside the process")
         c=0
         data = request.get_json()
-        text = data.get("text", "")
-        userName = data.get("userName", "")
-        print(userName)
-        print(type(userName))
+        codeInput = data.get("text", "")
+        email = data.get("userName", "")
         response = requests.get(url)
         if response.status_code == 200:
          data1 = response.json()
          for item in data1:
-             if item['Email'] == userName:
+             if item['Email'] == email:
                  c=c+1
                  formatted_time=item['url']
                  print("user already exist")
@@ -91,15 +84,16 @@ def seleniumGithubAction():
                  
         if c==0:
           print("inside the user defination")
-          epoch_time = int(time.time())
-          epoch_time_seconds = int(time.time())
-          formatted_time = str(epoch_time_seconds)
+          new_branch_name = formatted_time
+        #   epoch_time = int(time.time())
+        #   epoch_time_seconds = int(time.time())
+        #   formatted_time = str(epoch_time_seconds)
           post_url = "https://us-east-1.aws.data.mongodb-api.com/app/application-0-awqqz/endpoint/addSeleniumResult"
           data_to_send = {
                        "Submissions": [
                            
                            ],
-                              "Email":userName ,
+                              "Email":email ,
                               "url": formatted_time,
                               
                        }
@@ -110,14 +104,25 @@ def seleniumGithubAction():
           else:
            print(f"POST request failed with status code: {post_response.status_code}")
 
+        else:
+           response = requests.get(url)
+           if response.status_code == 200:
+            data = response.json()
+            for item in data:
+               if item['Email'] == email:
+                  c=len(item['Submissions'])
+                  new_branch_name=item['url']
+                  
+              
+
         print("inside post request")
-        branch=data.get("branch", "")
-        start_index = text.find('static String reportName')
-        quote_start = text.find('"', start_index)
-        quote_end = text.find('"', quote_start + 1)
+        # branch=data.get("branch", "")
+        start_index = codeInput.find('static String reportName')
+        quote_start = codeInput.find('"', start_index)
+        quote_end = codeInput.find('"', quote_start + 1)
         textareaValue = (
-                              text[:quote_start + 1]
-                             + "Report_"+formatted_time+ text[quote_end:]
+                              codeInput[:quote_start + 1]
+                             + "Report_"+formatted_time+"_"+str(c)+ codeInput[quote_end:]
                              )
 
         print(textareaValue) 
@@ -125,7 +130,7 @@ def seleniumGithubAction():
         yaml_file_path = '.github/workflows/selenium.yml'  # Replace with the actual path to your YAML file
         java_file_path = 'src/main/java/App.java'  # Replace with the actual path to your Java file
 
-        new_branch_name = branch
+        # new_branch_name = formatted_time
         
         # Make an authenticated request to the GitHub API to get the SHA of the source branch
         headers = {
@@ -134,7 +139,7 @@ def seleniumGithubAction():
 
         source_branch_name = "main"  # Replace with your source branch name
         response = requests.get(f"https://api.github.com/repos/{github_username}/{github_repository}/git/refs/heads/{source_branch_name}", headers=headers)
-
+        print(response.status_code)
         if response.status_code == 200:
             sha = response.json()['object']['sha']
             print(sha)
@@ -198,12 +203,36 @@ def seleniumGithubAction():
 
             response_yaml = requests.put(update_yaml_url, json=yaml_data, headers=headers)
             response_java = requests.put(update_java_url, json=java_data, headers=headers)
+            print(response_java.status_code)
+            print(response_yaml.status_code)
             
            
+        # Poll for the workflow status
+    workflow_runs_url = f"https://api.github.com/repos/{github_username}/{github_repository}/actions/workflows/selenium.yml/runs?branch={replacement_text}" 
+    while True:
+      response = requests.get(workflow_runs_url, headers=headers)
 
+      if response.status_code == 200:
+        data = response.json()
+        if data['workflow_runs']:
+            latest_run = data['workflow_runs'][0]
+            if latest_run['status'] == 'completed':
+                if latest_run['conclusion'] == 'success':
+                    print("Workflow completed successfully.")
+                    # Proceed with your further functions here
+                    break
+                else:
+                    print("Workflow completed with a failure.")
+                    break
+        else:
+            print("Workflow is still running...")
+      else:
+         print("Failed to fetch workflow run details.")
+
+      time.sleep(3)  # Wait for 3 seconds before checking again        
 
     
-    time.sleep(100)
+    time.sleep(60)
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
