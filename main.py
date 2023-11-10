@@ -37,7 +37,7 @@ github_personal_access_token_part2 = '3wIh6IOZu2Era62DZcHE'
 github_personal_access_token=github_personal_access_token_part1+github_personal_access_token_part2
 # github_personal_access_token = os.environ.get('MY_VARIABLE')
 # github_personal_access_token = os.getenv("KEY")
-
+sha_value=''
 source_branch_name = "main"
 
 # Set the API URLs
@@ -203,55 +203,92 @@ def seleniumGithubAction():
 
             response_yaml = requests.put(update_yaml_url, json=yaml_data, headers=headers)
             response_java = requests.put(update_java_url, json=java_data, headers=headers)
-            print(response_java.status_code)
-            print(response_yaml.status_code)
-            
+            response_java_json = response_java.json()
+            # print("Response Body for Java:", response_java.text)
+            if response_java.status_code == 200:
+            # Parse the JSON response
+             response_json = response_java.json()
+           # Check if the "commit" key exists in the response
+             if "commit" in response_json:
+              commit_data = response_json["commit"]
+              # Iterate over the commit data and print key-value pairs
+              for key, value in commit_data.items():
+                if key == "sha":
+                 sha_value = value
+                 print(sha_value);
+                 print(f"branch name which is created{replacement_text}")
+
+
+
+            # we would hit api until we would get the status completed
+              commit_status_url=f"https://api.github.com/repos/{github_username}/{github_repository}/actions/runs?event=push&branch= {replacement_text}&commit={sha_value}" 
+              while True:
+                 response = requests.get(commit_status_url, headers=headers)
+                 if response.status_code == 200:
+                    data = response.json()
+                    if data['workflow_runs']:
+                       latest_run = data['workflow_runs'][0]
+                       if latest_run['status'] == 'completed':
+                          if latest_run['conclusion'] == 'success':
+                           print("Workflow completed successfully.")
+                           # Proceed with your further functions here
+                           response = requests.get(url)
+                           if response.status_code == 200:
+                              data = response.json()
+                              print(data)
+                              for item in data:
+                                 if item['url'] == formatted_time:
+                                    if 'Submissions' in item and item['Submissions'] and len(item['Submissions']) > 0:
+                                       submissions = item['Submissions']
+                                       count_submissions = len(submissions)
+                                       print(count_submissions)
+                                       lastSubmission = item['Submissions'][-1]
+                                       lastSubmissionOutput = lastSubmission.get('Output', None)
+                                       print(lastSubmissionOutput)
+                           return jsonify({"result": lastSubmissionOutput})            
+                           break
+                          else:
+                             print("Workflow completed with a failure.")
+                             break
+                          
+                    else:
+                       print("Workflow is still running...")
+
+                 else:
+                     print("Failed to fetch workflow run details.")  
+
+              time.sleep(2)                       
+
+
+             else:
+              print("No 'commit' key found in the response JSON")
+            else:
+             print(f"Request to {update_java_url} failed with status code: {response_java.status_code}")
            
-        # Poll for the workflow status
-    workflow_runs_url = f"https://api.github.com/repos/{github_username}/{github_repository}/actions/workflows/selenium.yml/runs?branch={replacement_text}" 
-    while True:
-      response = requests.get(workflow_runs_url, headers=headers)
-
-      if response.status_code == 200:
-        data = response.json()
-        if data['workflow_runs']:
-            latest_run = data['workflow_runs'][0]
-            if latest_run['status'] == 'completed':
-                if latest_run['conclusion'] == 'success':
-                    print("Workflow completed successfully.")
-                    # Proceed with your further functions here
-                    break
-                else:
-                    print("Workflow completed with a failure.")
-                    break
-        else:
-            print("Workflow is still running...")
-      else:
-         print("Failed to fetch workflow run details.")
-
-      time.sleep(3)  # Wait for 3 seconds before checking again        
+      
+    
 
     
-    time.sleep(60)
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        print(data)
-        for item in data:
-            # if item['url'] == "http://g-codeeditor.el.r.appspot.com/editor?name=d57bc5785be7dfc774f8b69c8f08e3556c4d94060006fd5f91c51b0feb82f742":
-            if item['url'] == formatted_time:
-                # print(item['Submissions'])
-                if 'Submissions' in item and item['Submissions'] and len(item['Submissions']) > 0:
-                    submissions = item['Submissions']
-                    count_submissions = len(submissions)
-                    print(count_submissions)
-                    lastSubmission = item['Submissions'][-1]
-                    lastSubmissionOutput = lastSubmission.get('Output', None)
-                    print(lastSubmissionOutput)
+    # time.sleep(60)
+    # response = requests.get(url)
+    # if response.status_code == 200:
+    #     data = response.json()
+    #     print(data)
+    #     for item in data:
+    #         # if item['url'] == "http://g-codeeditor.el.r.appspot.com/editor?name=d57bc5785be7dfc774f8b69c8f08e3556c4d94060006fd5f91c51b0feb82f742":
+    #         if item['url'] == formatted_time:
+    #             # print(item['Submissions'])
+    #             if 'Submissions' in item and item['Submissions'] and len(item['Submissions']) > 0:
+    #                 submissions = item['Submissions']
+    #                 count_submissions = len(submissions)
+    #                 print(count_submissions)
+    #                 lastSubmission = item['Submissions'][-1]
+    #                 lastSubmissionOutput = lastSubmission.get('Output', None)
+    #                 print(lastSubmissionOutput)
 
 
         
-    return jsonify({"result": lastSubmissionOutput})
+    # return jsonify({"result": lastSubmissionOutput})
   
 
 
